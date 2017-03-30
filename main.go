@@ -4,61 +4,22 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"sync"
-	"text/template"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
 )
 
-// Service holds the data of a service
-type Service struct {
-	Name   string
-	Status bool
-	Who    string
-	Until  time.Time
-	mutex  sync.Mutex
-	FUntil string
-}
-
-// Updates the service status if the Until date has expired
-func (svc Service) UpdateUntil() {
-	if svc.Until.Before(time.Now()) {
-		svc.mutex.Lock()
-		svc.Status = false
-		svc.mutex.Unlock()
-	}
-}
-
-type ServiceList []*Service
-
 // Global list of all services currently known
 var Services ServiceList
 
-// Finds a service by its name
-func (list ServiceList) Find(serviceName string) *Service {
-	var svc *Service
-	for _, svc = range list {
-		if svc.Name == serviceName {
-			return svc
-		}
-	}
-	return &Service{Name: ""}
-}
-
 // Adds commandfline parameters as services in the default status (free)
 func AddEnvironments(list []string) {
-	var svc *Service
 	for _, envName := range list {
-		svc = new(Service)
-		svc.Name = envName
-		svc.Status = false
-		Services = append(Services, svc)
+		Services = Services.Append(NewService(envName))
 	}
 }
 
@@ -67,9 +28,12 @@ func main() {
 
 	router := httprouter.New()
 	router.GET("/", Index)
+	router.GET("/service", Index)
 	router.GET("/service/:service", ServiceStatus)
 	router.POST("/service/:service/stop", LockService)
 	router.POST("/service/:service/go", FreeService)
+	router.GET("/list/available", ListAvailable)
+	router.GET("/list/reserved", ListReserved)
 	router.ServeFiles("/static/*filepath", http.Dir("static/"))
 	if _, err := os.Stat("server.crt"); err == nil {
 		if _, err := os.Stat("server.key"); os.IsNotExist(err) {
@@ -85,17 +49,12 @@ func main() {
 
 // Shows a list of all services together with a form to actually reserve or free them
 func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var body bytes.Buffer
-
-	list_tmpl, err := template.New("list_services").Parse(list_services)
-	if err != nil {
-		panic(err)
+	switch outputType := r.URL.Query().Get("output"); outputType {
+	case "json":
+		outputJSON(w, Services)
+	default:
+		renderList(w, "Status", "list_services", list_services, Services)
 	}
-	err = list_tmpl.Execute(&body, Services)
-	if err != nil {
-		panic(err)
-	}
-	outputPage(w, "Status", body.String())
 }
 
 // Returns the status of a single service. The HTTP status codes also reflect the service status
@@ -206,29 +165,22 @@ func FreeService(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	renderPage(w, ps.ByName("service"), svc, tpl, title)
 }
 
-// Renders first the body and and passes it to outputPage
-func renderPage(w http.ResponseWriter, serverName string, svc *Service, tpl string, title string) {
-	var body bytes.Buffer
-	template, err := template.New("svc").Parse(tpl)
-	if err != nil {
-		panic(err)
+func ListAvailable(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	list := Services.StatusList(false)
+	switch outputType := r.URL.Query().Get("output"); outputType {
+	case "json":
+		outputJSON(w, list)
+	default:
+		renderList(w, "Available", "list_available", list_available, list)
 	}
-	svc.FUntil = svc.Until.Format("2006-01-02 15:04:05")
-	err = template.Execute(&body, svc)
-	if err != nil {
-		panic(err)
-	}
-	outputPage(w, "Service "+serverName+title, body.String())
 }
 
-//Writes a HTML page to the provided ResponseWriter
-func outputPage(w http.ResponseWriter, title string, body string) {
-	page_tmpl, err := template.New("html_page").Parse(html_page)
-	if err != nil {
-		panic(err)
-	}
-	err = page_tmpl.Execute(w, Page{Title: title, Body: body})
-	if err != nil {
-		panic(err)
+func ListReserved(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	list := Services.StatusList(true)
+	switch outputType := r.URL.Query().Get("output"); outputType {
+	case "json":
+		outputJSON(w, list)
+	default:
+		renderList(w, "Reserved", "list_reserved", list_reserved, list)
 	}
 }

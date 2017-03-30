@@ -82,3 +82,54 @@ const svc_free string = `
     <button type="submit">Lock</button>
    </form>
 `
+const list_available string = `
+   <table class="list">
+    <tr>
+	 <th>Service</th>
+	 <th>Status</th>
+	 <th>User</th>
+	 <th>Until</th>
+	 <th>Action</th>
+	</tr>
+	{{ range . }}
+	<tr>
+	 <td><a href="/service/{{ . }}">{{ . }}</a></td>
+	 <td><img src="/static/green.png" alt="free" /></td>
+	<td>&nbsp;</td>
+	<td>&nbsp;</td>
+	 <td>
+	  <form action="/service/{{ . }}/stop" method="post" >
+	   Who: <input type="text" name="who" size="10" />
+	   Until:<input type="text" name="until" size="20"/>
+	   <button type="submit">Lock</button>
+	  </form>
+	 </td>
+	</tr>
+	{{ end }}
+</table>
+`
+const list_reserved string = `
+   <table class="list">
+    <tr>
+	 <th>Service</th>
+	 <th>Status</th>
+	 <th>User</th>
+	 <th>Until</th>
+	 <th>Action</th>
+	</tr>
+	{{ range . }}
+	<tr>
+	 <td><a href="/service/{{ . }}">{{ . }}</a></td>
+	 <td><img src="/static/red.png" alt="in use" /></td>
+	<td>&nbsp;</td>
+	<td>&nbsp;</td>
+	 <td>
+	  <form action="/service/{{ . }}/go" method="post" >
+	   Who: <input type="text" name="who" size="10" />
+	   <button type="submit">Release</button>
+	  </form>
+	 </td>
+	</tr>
+	{{ end }}
+</table>
+`
