@@ -32,8 +32,11 @@ func main() {
 	router.GET("/service/:service", ServiceStatus)
 	router.POST("/service/:service/stop", LockService)
 	router.POST("/service/:service/go", FreeService)
+	router.GET("/list", Index)
 	router.GET("/list/available", ListAvailable)
+	router.GET("/list/free", ListAvailable)
 	router.GET("/list/reserved", ListReserved)
+	router.GET("/list/stopped", ListReserved)
 	router.ServeFiles("/static/*filepath", http.Dir("static/"))
 	if _, err := os.Stat("server.crt"); err == nil {
 		if _, err := os.Stat("server.key"); os.IsNotExist(err) {
