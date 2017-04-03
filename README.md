@@ -47,6 +47,12 @@ This application supports the following endpoints:
 GET / delivers a list of available services
 
 GET /service delivers a list of available services
+POST /service adds a new service. A field named "Name" contains the name for
+the service, The optional field "who" is used in logging who tried to add a
+service. The HTTP- status codes give feedback,. whether the creation
+succeded or not:
+- 200/OK is returned, if the service has been created successfully
+- 409/Conflict is returned, if the service already exists
 
 GET /service/$SERVICENAME returns the status of the service $SERVICENAME
 The HTTP status codes reflect the service status

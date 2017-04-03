@@ -29,7 +29,9 @@ func main() {
 	router := httprouter.New()
 	router.GET("/", Index)
 	router.GET("/service", Index)
+	router.POST("/service", AddService)
 	router.GET("/service/:service", ServiceStatus)
+	router.POST("/service/:service", AddService)
 	router.POST("/service/:service/stop", LockService)
 	router.POST("/service/:service/go", FreeService)
 	router.GET("/list", Index)
@@ -186,4 +188,26 @@ func ListReserved(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	default:
 		renderList(w, "Reserved", "list_reserved", list_reserved, list)
 	}
+}
+
+func AddService(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var svc *Service
+	var title string
+	var tpl string
+
+	svc = Services.Find(r.FormValue("Name"))
+	if svc.Name != "" {
+		title = " already exists"
+		tpl = svc_already_exists
+		fmt.Println(time.Now().String() + " " + r.FormValue("who") + " tried to add the already existing service " + svc.Name)
+		w.WriteHeader(http.StatusConflict)
+	} else {
+		title = " created"
+		tpl = svc_free
+		svc = NewService(r.FormValue("Name"))
+		Services = Services.Append(svc)
+		fmt.Println(time.Now().String() + " " + r.FormValue("who") + " added the service " + svc.Name)
+		w.Header().Add("refresh", "2; URL=/service/"+svc.Name)
+	}
+	renderPage(w, ps.ByName("service"), svc, tpl, title)
 }

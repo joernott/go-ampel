@@ -55,6 +55,9 @@ const list_services string = `
 	 </td>
 	</tr>
 	{{ end }}
+	<tr>
+	 <td><a href="/static/addservice.html"><img src="/static/add.png" alt="add service" border=0 /></a>
+	</tr>
 </table>
 `
 const svc_not_found string = `
@@ -132,4 +135,7 @@ const list_reserved string = `
 	</tr>
 	{{ end }}
 </table>
+`
+const svc_already_exists string = `
+   <p class="error">The service {{ . }} already exists.</p>
 `
